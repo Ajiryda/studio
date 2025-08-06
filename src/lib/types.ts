@@ -25,3 +25,10 @@ export interface Screening {
     studentName: string;
     symptoms: string;
 }
+
+export interface ScreeningResult {
+  physicalStatus: string;
+  mentalHealth: string;
+  lifestyle: string;
+  recommendations: string[];
+}
