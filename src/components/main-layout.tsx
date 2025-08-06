@@ -68,7 +68,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenuTrigger asChild>
               <div className="flex w-full cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-sidebar-accent">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://placehold.co/100x100.png" alt="User" />
+                  <AvatarImage
+                    data-ai-hint="avatar"
+                    src="https://placehold.co/100x100.png"
+                    alt="User"
+                  />
                   <AvatarFallback>NU</AvatarFallback>
                 </Avatar>
                 <div className="flex-grow overflow-hidden text-left">
@@ -107,7 +111,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className='flex h-full flex-col'>
+        <div className="flex h-full flex-col">
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
             {children}
           </main>

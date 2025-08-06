@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -35,13 +35,17 @@ import {
 } from './ui/select';
 
 export function UksTrafficClient() {
-  const [visits, setVisits] = useState<Visit[]>(initialVisits);
+  const [visits, setVisits] = useState<Visit[]>([]);
   const [newVisit, setNewVisit] = useState({
     studentId: '',
     reason: '',
   });
   const [isDialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setVisits(initialVisits);
+  }, []);
 
   const handleLogEntry = () => {
     if (!newVisit.studentId || !newVisit.reason) {

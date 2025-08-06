@@ -11,18 +11,25 @@ import {
 } from 'recharts';
 import { uksVisits } from '@/lib/mock-data';
 import { ChartTooltipContent } from '@/components/ui/chart';
+import { useEffect, useState } from 'react';
 
 export function DashboardCharts() {
-  const data = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    return {
-      date: d.toLocaleDateString('en-US', { weekday: 'short' }),
-      visits: uksVisits.filter(
-        (v) => new Date(v.entryTime).toDateString() === d.toDateString()
-      ).length,
-    };
-  }).reverse();
+  const [data, setData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const chartData = Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return {
+          date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          visits: uksVisits.filter(
+            (v) => new Date(v.entryTime).toDateString() === d.toDateString()
+          ).length,
+        };
+      }).reverse();
+    setData(chartData);
+  }, []);
+
 
   return (
     <ResponsiveContainer width="100%" height={350}>
