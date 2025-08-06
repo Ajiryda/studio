@@ -1,3 +1,5 @@
+"use client";
+
 import { MainLayout } from '@/components/main-layout';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -5,6 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
+
 
 export default function AdminDashboardPage() {
   // Mock data for demonstration
@@ -28,6 +37,17 @@ export default function AdminDashboardPage() {
     { name: 'AGUNG WIBOWO', class: '7A' },
     { name: 'AHMAD EDI SAPUTRA', class: '7A' },
   ];
+
+  const exportToPDF = () => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    doc.text("Daftar Siswa Belum Skrining", 14, 16);
+    doc.autoTable({
+        startY: 20,
+        head: [['Nama Siswa', 'Kelas']],
+        body: unscreenedStudents.map(s => [s.name, s.class]),
+    });
+    doc.save('siswa-belum-skrining.pdf');
+  }
 
   return (
     <MainLayout>
@@ -109,7 +129,7 @@ export default function AdminDashboardPage() {
               <CardTitle>Siswa Belum Skrining</CardTitle>
               <CardDescription>Daftar siswa yang perlu diingatkan untuk melakukan skrining.</CardDescription>
             </div>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={exportToPDF}>
                 <Download className="mr-2 h-4 w-4"/>
                 Ekspor Data
             </Button>
