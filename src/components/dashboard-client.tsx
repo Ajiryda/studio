@@ -48,54 +48,54 @@ export function DashboardClient() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Students in UKS
+              Siswa di UKS
             </CardTitle>
             <Icons.users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{studentsInUKS}</div>
             <p className="text-xs text-muted-foreground">
-              Currently in the health unit
+              Saat ini di unit kesehatan
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Today's Visits
+              Kunjungan Hari Ini
             </CardTitle>
             <Icons.clipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{recentVisits.length}</div>
             <p className="text-xs text-muted-foreground">
-              Total visits recorded today
+              Total kunjungan tercatat hari ini
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Common Issue</CardTitle>
+            <CardTitle className="text-sm font-medium">Keluhan Umum</CardTitle>
             <Icons.activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Headache</div>
+            <div className="text-2xl font-bold">Sakit Kepala</div>
             <p className="text-xs text-muted-foreground">
-              Most frequent symptom this week
+              Gejala paling sering minggu ini
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Low Stock Alert
+              Peringatan Stok Rendah
             </CardTitle>
             <Icons.alertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Paracetamol</div>
             <p className="text-xs text-muted-foreground">
-              Needs restocking soon
+              Perlu segera diisi ulang
             </p>
           </CardContent>
         </Card>
@@ -103,8 +103,8 @@ export function DashboardClient() {
       <div className="grid grid-cols-1 gap-4 pt-4 lg:grid-cols-7">
         <Card className="col-span-1 lg:col-span-4">
           <CardHeader>
-            <CardTitle>UKS Visit Trends</CardTitle>
-            <CardDescription>Visits over the last 7 days.</CardDescription>
+            <CardTitle>Tren Kunjungan UKS</CardTitle>
+            <CardDescription>Kunjungan selama 7 hari terakhir.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <DashboardCharts />
@@ -112,18 +112,18 @@ export function DashboardClient() {
         </Card>
         <Card className="col-span-1 lg:col-span-3">
           <CardHeader>
-            <CardTitle>Recent UKS Entries</CardTitle>
+            <CardTitle>Kunjungan UKS Terbaru</CardTitle>
             <CardDescription>
-              Students who visited the UKS today.
+              Siswa yang mengunjungi UKS hari ini.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Time In</TableHead>
+                  <TableHead>Siswa</TableHead>
+                  <TableHead>Alasan</TableHead>
+                  <TableHead>Waktu Masuk</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -150,7 +150,7 @@ export function DashboardClient() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center">
-                      No visits recorded today.
+                      Tidak ada kunjungan tercatat hari ini.
                     </TableCell>
                   </TableRow>
                 )}

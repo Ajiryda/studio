@@ -6,8 +6,8 @@ export default function ScreeningPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Student Health Screening"
-        description="Record a new health screening for a student."
+        title="Skrining Kesehatan Siswa"
+        description="Catat skrining kesehatan baru untuk siswa."
       />
       <ScreeningClient />
     </MainLayout>

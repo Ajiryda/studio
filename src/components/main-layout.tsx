@@ -27,10 +27,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const navItems = [
-  { href: '/', icon: Icons.dashboard, label: 'Dashboard' },
-  { href: '/uks-traffic', icon: Icons.traffic, label: 'UKS Traffic' },
-  { href: '/screening', icon: Icons.screening, label: 'Screening' },
-  { href: '/analytics', icon: Icons.analytics, label: 'Analytics' },
+  { href: '/', icon: Icons.dashboard, label: 'Dasbor' },
+  { href: '/uks-traffic', icon: Icons.traffic, label: 'Kunjungan UKS' },
+  { href: '/screening', icon: Icons.screening, label: 'Skrining' },
+  { href: '/analytics', icon: Icons.analytics, label: 'Analitik' },
 ];
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
@@ -71,14 +71,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <AvatarImage
                     data-ai-hint="avatar"
                     src="https://placehold.co/100x100.png"
-                    alt="User"
+                    alt="Pengguna"
                   />
-                  <AvatarFallback>NU</AvatarFallback>
+                  <AvatarFallback>PU</AvatarFallback>
                 </Avatar>
                 <div className="flex-grow overflow-hidden text-left">
-                  <p className="truncate text-sm font-medium">Nurse User</p>
+                  <p className="truncate text-sm font-medium">Perawat</p>
                   <p className="truncate text-xs text-sidebar-foreground/70">
-                    nurse@school.com
+                    perawat@sekolah.com
                   </p>
                 </div>
               </div>
@@ -86,25 +86,25 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Nurse User</p>
+                  <p className="text-sm font-medium leading-none">Perawat</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    nurse@school.com
+                    perawat@sekolah.com
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Icons.user className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>Profil</span>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Icons.settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+                <span>Pengaturan</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Icons.logout className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>Keluar</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

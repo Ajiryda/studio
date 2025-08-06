@@ -1,50 +1,44 @@
-// src/ai/flows/visualize-health-data.ts
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow for visualizing analyzed health data and supply needs.
+ * @fileOverview File ini mendefinisikan alur Genkit untuk memvisualisasikan data kesehatan yang dianalisis dan kebutuhan pasokan.
  *
- * - visualizeHealthData - A function that generates a visualization of health data and supply needs.
- * - VisualizeHealthDataInput - The input type for the visualizeHealthData function, including health data and supply needs.
- * - VisualizeHealthDataOutput - The output type for the visualizeHealthData function, providing a textual summary and potentially a data URI for a chart image.
+ * - visualizeHealthData - Fungsi yang menghasilkan visualisasi data kesehatan dan kebutuhan pasokan.
+ * - VisualizeHealthDataInput - Tipe masukan untuk fungsi visualizeHealthData, termasuk data kesehatan dan kebutuhan pasokan.
+ * - VisualizeHealthDataOutput - Tipe keluaran untuk fungsi visualizeHealthData, memberikan ringkasan tekstual.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-// Define the input schema
 const VisualizeHealthDataInputSchema = z.object({
-  mostCommonReason: z.string().describe('The most common reason for visits to the UKS (school health unit).'),
-  suggestedMedications: z.string().describe('A list of suggested medications based on the health data.'),
+  mostCommonReason: z.string().describe('Alasan paling umum untuk kunjungan ke UKS (unit kesehatan sekolah).'),
+  suggestedMedications: z.string().describe('Daftar saran obat-obatan berdasarkan data kesehatan.'),
 });
 export type VisualizeHealthDataInput = z.infer<typeof VisualizeHealthDataInputSchema>;
 
-// Define the output schema
 const VisualizeHealthDataOutputSchema = z.object({
-  summary: z.string().describe('A summary of the health data and supply needs.'),
+  summary: z.string().describe('Ringkasan data kesehatan dan kebutuhan pasokan.'),
 });
 export type VisualizeHealthDataOutput = z.infer<typeof VisualizeHealthDataOutputSchema>;
 
-// Exported function to call the flow
 export async function visualizeHealthData(input: VisualizeHealthDataInput): Promise<VisualizeHealthDataOutput> {
   return visualizeHealthDataFlow(input);
 }
 
-// Define the prompt
 const visualizeHealthDataPrompt = ai.definePrompt({
   name: 'visualizeHealthDataPrompt',
   input: {schema: VisualizeHealthDataInputSchema},
   output: {schema: VisualizeHealthDataOutputSchema},
-  prompt: `You are a data visualization expert for school health data.
+  prompt: `Anda adalah seorang ahli visualisasi data untuk data kesehatan sekolah.
 
-  Based on the following information, generate a concise summary that a school administrator can use to understand health trends and make resource allocation decisions.  The summary should include key insights into common health issues and suggested medications/supplies.
+  Berdasarkan informasi berikut, buatlah ringkasan singkat yang dapat digunakan oleh administrator sekolah untuk memahami tren kesehatan dan membuat keputusan alokasi sumber daya. Ringkasan harus mencakup wawasan utama tentang masalah kesehatan umum dan saran obat/perlengkapan.
 
-  Most common reason for visits: {{{mostCommonReason}}}
-  Suggested medications: {{{suggestedMedications}}}
+  Alasan paling umum untuk kunjungan: {{{mostCommonReason}}}
+  Saran obat-obatan: {{{suggestedMedications}}}
   `,
 });
 
-// Define the flow
 const visualizeHealthDataFlow = ai.defineFlow(
   {
     name: 'visualizeHealthDataFlow',

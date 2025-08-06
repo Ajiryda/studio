@@ -6,8 +6,8 @@ export default function AnalyticsPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Health Trend Analysis"
-        description="Using AI to analyze health data and provide actionable insights."
+        title="Analisis Tren Kesehatan"
+        description="Menggunakan AI untuk menganalisis data kesehatan dan memberikan wawasan yang dapat ditindaklanjuti."
       />
       <AnalyticsClient />
     </MainLayout>

@@ -51,7 +51,7 @@ export function UksTrafficClient() {
     if (!newVisit.studentId || !newVisit.reason) {
       toast({
         title: 'Error',
-        description: 'Please select a student and enter a reason.',
+        description: 'Silakan pilih siswa dan masukkan alasan.',
         variant: 'destructive',
       });
       return;
@@ -71,8 +71,8 @@ export function UksTrafficClient() {
     };
     setVisits((prev) => [newEntry, ...prev]);
     toast({
-      title: 'Student Entry Logged',
-      description: `${student.name} has been logged into the UKS.`,
+      title: 'Kunjungan Siswa Dicatat',
+      description: `${student.name} telah dicatat masuk ke UKS.`,
     });
     setNewVisit({ studentId: '', reason: '' });
     setDialogOpen(false);
@@ -87,8 +87,8 @@ export function UksTrafficClient() {
     const visit = visits.find((v) => v.id === id);
     if(visit) {
         toast({
-            title: 'Student Exit Logged',
-            description: `${visit.studentName} has been logged out of the UKS.`,
+            title: 'Siswa Dicatat Keluar',
+            description: `${visit.studentName} telah dicatat keluar dari UKS.`,
         });
     }
   };
@@ -100,22 +100,22 @@ export function UksTrafficClient() {
     <div className="space-y-8">
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Currently in UKS</h2>
+          <h2 className="text-xl font-semibold">Saat ini di UKS</h2>
           <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button>Log Student Entry</Button>
+              <Button>Catat Kunjungan Siswa</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Log New Student Entry</DialogTitle>
+                <DialogTitle>Catat Kunjungan Siswa Baru</DialogTitle>
                 <DialogDescription>
-                  Record a new student visiting the health unit.
+                  Catat siswa baru yang mengunjungi unit kesehatan.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="student" className="text-right">
-                    Student
+                    Siswa
                   </Label>
                   <Select
                     onValueChange={(value) =>
@@ -123,7 +123,7 @@ export function UksTrafficClient() {
                     }
                   >
                     <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a student" />
+                      <SelectValue placeholder="Pilih siswa" />
                     </SelectTrigger>
                     <SelectContent>
                       {students.map((student) => (
@@ -136,7 +136,7 @@ export function UksTrafficClient() {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="reason" className="text-right">
-                    Reason
+                    Alasan
                   </Label>
                   <Input
                     id="reason"
@@ -145,15 +145,15 @@ export function UksTrafficClient() {
                     onChange={(e) =>
                       setNewVisit({ ...newVisit, reason: e.target.value })
                     }
-                    placeholder="e.g., Headache"
+                    placeholder="Contoh: Sakit Kepala"
                   />
                 </div>
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
+                  <Button variant="outline">Batal</Button>
                 </DialogClose>
-                <Button onClick={handleLogEntry}>Log Entry</Button>
+                <Button onClick={handleLogEntry}>Catat Kunjungan</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -161,10 +161,10 @@ export function UksTrafficClient() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Time In</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead>Siswa</TableHead>
+              <TableHead>Alasan</TableHead>
+              <TableHead>Waktu Masuk</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -187,7 +187,7 @@ export function UksTrafficClient() {
                       variant="outline"
                       onClick={() => handleLogExit(visit.id)}
                     >
-                      Log Exit
+                      Catat Keluar
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -195,7 +195,7 @@ export function UksTrafficClient() {
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="text-center h-24">
-                  No students currently in UKS.
+                  Tidak ada siswa di UKS saat ini.
                 </TableCell>
               </TableRow>
             )}
@@ -204,14 +204,14 @@ export function UksTrafficClient() {
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold">Visit History</h2>
+        <h2 className="text-xl font-semibold">Riwayat Kunjungan</h2>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Time In</TableHead>
-              <TableHead>Time Out</TableHead>
+              <TableHead>Siswa</TableHead>
+              <TableHead>Alasan</TableHead>
+              <TableHead>Waktu Masuk</TableHead>
+              <TableHead>Waktu Keluar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

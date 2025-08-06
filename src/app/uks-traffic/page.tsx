@@ -7,8 +7,8 @@ export default function UksTrafficPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="UKS Traffic Management"
-        description="Log and monitor student entry and exit from the school health unit."
+        title="Manajemen Kunjungan UKS"
+        description="Catat dan pantau kunjungan siswa di unit kesehatan sekolah."
       />
       <Card>
         <CardContent className="p-6">

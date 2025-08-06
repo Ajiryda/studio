@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 
 const chartConfig = {
   visits: {
-    label: 'Visits',
+    label: 'Kunjungan',
     color: 'hsl(var(--primary))',
   },
 } satisfies ChartConfig;
@@ -29,7 +29,7 @@ export function DashboardCharts() {
         const d = new Date();
         d.setDate(d.getDate() - i);
         return {
-          date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          date: d.toLocaleDateString('id-ID', { weekday: 'short' }),
           visits: uksVisits.filter(
             (v) => new Date(v.entryTime).toDateString() === d.toDateString()
           ).length,
