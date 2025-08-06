@@ -2,6 +2,8 @@ export interface Student {
   id: number;
   name: string;
   class: string;
+  absenceNumber?: number;
+  school?: string;
 }
 
 export interface Visit {
