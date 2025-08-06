@@ -34,3 +34,10 @@ export interface ScreeningResult {
   lifestyle: string;
   recommendations: string[];
 }
+
+export interface User {
+  id: string;
+  name: string;
+  role: 'admin' | 'guru' | 'siswa';
+  class?: string;
+}

@@ -25,17 +25,34 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { useAuth } from '@/hooks/use-auth';
 
-const navItems = [
-  { href: '/', icon: Icons.dashboard, label: 'Dasbor' },
-  { href: '/uks-traffic', icon: Icons.traffic, label: 'Kunjungan UKS' },
-  { href: '/screening', icon: Icons.screening, label: 'Skrining' },
-  { href: '/analytics', icon: Icons.analytics, label: 'Analitik' },
-  { href: '/admin', icon: Icons.admin, label: 'Dasbor Admin' },
+const allNavItems = [
+  { href: '/', icon: Icons.dashboard, label: 'Dasbor', roles: ['admin', 'guru', 'siswa'] },
+  { href: '/uks-traffic', icon: Icons.traffic, label: 'Kunjungan UKS', roles: ['admin', 'guru'] },
+  { href: '/screening', icon: Icons.screening, label: 'Skrining', roles: ['admin', 'guru'] },
+  { href: '/analytics', icon: Icons.analytics, label: 'Analitik', roles: ['admin', 'guru'] },
+  { href: '/admin', icon: Icons.admin, label: 'Dasbor Admin', roles: ['admin'] },
 ];
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const navItems = React.useMemo(() => {
+    if (!user) return [];
+    return allNavItems.filter(item => item.roles.includes(user.role));
+  }, [user]);
+
+  if (!user) {
+    return (
+        <div className="flex h-full flex-col">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+            {children}
+          </main>
+        </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -72,14 +89,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <AvatarImage
                     data-ai-hint="avatar"
                     src="https://placehold.co/100x100.png"
-                    alt="Pengguna"
+                    alt={user.name}
                   />
-                  <AvatarFallback>PU</AvatarFallback>
+                  <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex-grow overflow-hidden text-left">
-                  <p className="truncate text-sm font-medium">Perawat</p>
+                  <p className="truncate text-sm font-medium">{user.name}</p>
                   <p className="truncate text-xs text-sidebar-foreground/70">
-                    perawat@sekolah.com
+                    {user.role}
                   </p>
                 </div>
               </div>
@@ -87,23 +104,23 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Perawat</p>
+                  <p className="text-sm font-medium leading-none">{user.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    perawat@sekolah.com
+                     {user.role === 'siswa' ? `Kelas: ${user.class}` : user.id}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem disabled>
                 <Icons.user className="mr-2 h-4 w-4" />
                 <span>Profil</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem disabled>
                 <Icons.settings className="mr-2 h-4 w-4" />
                 <span>Pengaturan</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={logout}>
                 <Icons.logout className="mr-2 h-4 w-4" />
                 <span>Keluar</span>
               </DropdownMenuItem>
