@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/hooks/use-auth';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
   title: 'HealthCheck Hub',
@@ -26,7 +27,7 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased', 'min-h-screen bg-background font-sans')}>
         <AuthProvider>
-          {children}
+          <SidebarProvider>{children}</SidebarProvider>
         </AuthProvider>
         <Toaster />
       </body>
