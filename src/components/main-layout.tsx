@@ -31,6 +31,7 @@ const navItems = [
   { href: '/uks-traffic', icon: Icons.traffic, label: 'Kunjungan UKS' },
   { href: '/screening', icon: Icons.screening, label: 'Skrining' },
   { href: '/analytics', icon: Icons.analytics, label: 'Analitik' },
+  { href: '/admin', icon: Icons.admin, label: 'Dasbor Admin' },
 ];
 
 export function MainLayout({ children }: { children: React.ReactNode }) {

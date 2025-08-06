@@ -10,6 +10,7 @@ import {
   Settings,
   CircleAlert,
   Activity,
+  Shield,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -21,6 +22,7 @@ export const Icons = {
   traffic: Users,
   screening: ClipboardList,
   analytics: BarChartBig,
+  admin: Shield,
   user: UserCircle,
   bell: Bell,
   logout: LogOut,
