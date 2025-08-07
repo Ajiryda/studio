@@ -1,4 +1,10 @@
-import { config } from 'dotenv';
+import {isProd} from 'genkit';
+
+if (isProd()) {
+  process.exit();
+}
+
+import {config} from 'dotenv';
 config();
 
 import '@/ai/flows/analyze-health-trends.ts';
