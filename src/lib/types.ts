@@ -1,6 +1,6 @@
 
 export interface Student {
-  id: number;
+  id: string;
   name: string;
   class: string;
   absenceNumber?: number;
@@ -8,17 +8,17 @@ export interface Student {
 }
 
 export interface Visit {
-  id: number;
-  studentId: number;
+  id: string; // Changed to string for Firestore
+  studentId: string; // Changed to string to reference student doc ID
   studentName: string;
   studentClass: string;
   reason: string;
-  entryTime: string;
-  exitTime: string | null;
+  entryTime: string; // ISO string format
+  exitTime: string | null; // ISO string format or null
 }
 
 export interface Medication {
-    id: string; // Changed to string to match Firestore document ID
+    id: string; 
     name: string;
     stock: number;
 }
