@@ -43,7 +43,7 @@ export function AnalyticsClient() {
           <CardHeader>
             <CardTitle>Keluhan Kesehatan Umum</CardTitle>
             <CardDescription>Diidentifikasi dari kunjungan UKS terkini.</CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent>
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
@@ -56,7 +56,7 @@ export function AnalyticsClient() {
           <CardHeader>
             <CardTitle>Saran Obat & Perlengkapan</CardTitle>
             <CardDescription>Rekomendasi berdasarkan tren.</CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent>
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
