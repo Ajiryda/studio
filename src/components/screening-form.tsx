@@ -151,7 +151,16 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
         throw new Error("Siswa tidak ditemukan");
       }
       
-      const result = await generateScreeningRecommendation({ studentData: JSON.stringify({...data, studentName: student.name}) });
+      const heightInMeters = data.height / 100;
+      const finalBmi = data.weight / (heightInMeters * heightInMeters);
+
+      const dataForAI = {
+        ...data,
+        bmi: parseFloat(finalBmi.toFixed(1)),
+        studentName: student.name,
+      };
+
+      const result = await generateScreeningRecommendation({ studentData: JSON.stringify(dataForAI) });
 
       const screeningDataToSave: Omit<Screening, 'id'> = {
         studentId: student.id,

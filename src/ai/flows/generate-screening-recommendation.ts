@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -12,7 +13,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateScreeningRecommendationInputSchema = z.object({
-  studentData: z.string().describe('A JSON string containing the student\'s screening data.'),
+  studentData: z.string().describe('A JSON string containing the student\'s screening data, including their name and BMI.'),
 });
 export type GenerateScreeningRecommendationInput = z.infer<typeof GenerateScreeningRecommendationInputSchema>;
 
