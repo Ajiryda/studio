@@ -11,7 +11,5 @@ export const ai = genkit({
       // Opsi bisa ditambahkan di sini jika diperlukan
     }),
   ],
-  model: 'googleai/gemini-2.0-flash',
   enableTracingAndMetrics: true,
-  logLevel: 'debug',
 });
