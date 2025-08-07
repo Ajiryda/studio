@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   HeartPulse,
@@ -12,6 +13,7 @@ import {
   Activity,
   Shield,
   Pill,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -33,4 +35,5 @@ export const Icons = {
   activity: Activity,
   users: Users,
   clipboardList: ClipboardList,
+  spinner: Loader2,
 };

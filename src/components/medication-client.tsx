@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -24,20 +25,39 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Medication } from '@/lib/types';
-import { medications as initialMedications } from '@/lib/mock-data';
-import { PlusCircle, Trash2, Edit } from 'lucide-react';
+import { getMedications, addMedication, updateMedication, deleteMedication } from '@/lib/firebase-services';
+import { PlusCircle, Trash2, Edit, Loader2 } from 'lucide-react';
+import { Skeleton } from './ui/skeleton';
 
 export function MedicationClient() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentMed, setCurrentMed] = useState<Partial<Medication>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
+  const fetchMedications = useCallback(async () => {
+    try {
+      setLoading(true);
+      const meds = await getMedications();
+      setMedications(meds);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Gagal Memuat Data',
+        description: 'Tidak dapat mengambil data obat dari database.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    // In a real app, this would be a fetch call to an API
-    setMedications(initialMedications);
-  }, []);
+    fetchMedications();
+  }, [fetchMedications]);
 
   const handleOpenDialog = (med?: Medication) => {
     if (med) {
@@ -50,15 +70,24 @@ export function MedicationClient() {
     setDialogOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    setMedications(medications.filter((med) => med.id !== id));
-    toast({
-      title: 'Obat Dihapus',
-      description: 'Data obat telah berhasil dihapus.',
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMedication(id);
+      setMedications(medications.filter((med) => med.id !== id));
+      toast({
+        title: 'Obat Dihapus',
+        description: 'Data obat telah berhasil dihapus.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Gagal Menghapus',
+        description: 'Terjadi kesalahan saat menghapus data.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!currentMed.name || currentMed.stock === undefined || currentMed.stock < 0) {
       toast({
         title: 'Input Tidak Valid',
@@ -68,28 +97,73 @@ export function MedicationClient() {
       return;
     }
 
-    if (isEditing) {
-      setMedications(medications.map((med) => (med.id === currentMed.id ? (currentMed as Medication) : med)));
-      toast({
-        title: 'Obat Diperbarui',
-        description: `Data untuk ${currentMed.name} telah diperbarui.`,
+    setSaving(true);
+    try {
+      if (isEditing && currentMed.id) {
+        await updateMedication(currentMed.id, { name: currentMed.name, stock: currentMed.stock });
+        toast({
+          title: 'Obat Diperbarui',
+          description: `Data untuk ${currentMed.name} telah diperbarui.`,
+        });
+      } else {
+        await addMedication({ name: currentMed.name, stock: currentMed.stock });
+        toast({
+          title: 'Obat Ditambahkan',
+          description: `${currentMed.name} telah ditambahkan ke daftar.`,
+        });
+      }
+      fetchMedications(); // Refresh data from firestore
+    } catch (error) {
+       toast({
+        title: 'Gagal Menyimpan',
+        description: 'Terjadi kesalahan saat menyimpan data.',
+        variant: 'destructive',
       });
-    } else {
-      const newMed: Medication = {
-        id: Math.max(...medications.map((m) => m.id), 0) + 1,
-        name: currentMed.name,
-        stock: currentMed.stock,
-      };
-      setMedications([...medications, newMed]);
-      toast({
-        title: 'Obat Ditambahkan',
-        description: `${currentMed.name} telah ditambahkan ke daftar.`,
-      });
+    } finally {
+      setSaving(false);
+      setDialogOpen(false);
+      setCurrentMed({});
     }
-
-    setDialogOpen(false);
-    setCurrentMed({});
   };
+  
+  const renderTableBody = () => {
+    if (loading) {
+        return (
+            <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-1/2 mx-auto" />
+                        <Skeleton className="h-4 w-1/3 mx-auto" />
+                    </div>
+                </TableCell>
+            </TableRow>
+        );
+    }
+    if (medications.length === 0) {
+        return (
+            <TableRow>
+                <TableCell colSpan={3} className="text-center h-24">
+                    Tidak ada data obat. Silakan tambahkan obat baru.
+                </TableCell>
+            </TableRow>
+        );
+    }
+    return medications.map((med) => (
+      <TableRow key={med.id}>
+        <TableCell className="font-medium">{med.name}</TableCell>
+        <TableCell>{med.stock}</TableCell>
+        <TableCell className="text-right">
+          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(med)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(med.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
 
   return (
     <div className="space-y-4">
@@ -119,6 +193,7 @@ export function MedicationClient() {
                   onChange={(e) => setCurrentMed({ ...currentMed, name: e.target.value })}
                   className="col-span-3"
                   placeholder="e.g., Paracetamol"
+                  disabled={saving}
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -132,14 +207,18 @@ export function MedicationClient() {
                   onChange={(e) => setCurrentMed({ ...currentMed, stock: parseInt(e.target.value) || 0 })}
                   className="col-span-3"
                   placeholder="e.g., 100"
+                   disabled={saving}
                 />
               </div>
             </div>
             <DialogFooter>
                <DialogClose asChild>
-                  <Button variant="outline">Batal</Button>
+                  <Button variant="outline" disabled={saving}>Batal</Button>
                 </DialogClose>
-              <Button onClick={handleSaveChanges}>Simpan Perubahan</Button>
+              <Button onClick={handleSaveChanges} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -154,27 +233,7 @@ export function MedicationClient() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {medications.map((med) => (
-              <TableRow key={med.id}>
-                <TableCell className="font-medium">{med.name}</TableCell>
-                <TableCell>{med.stock}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(med)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(med.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-             {medications.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={3} className="text-center h-24">
-                        Tidak ada data obat.
-                    </TableCell>
-                </TableRow>
-             )}
+            {renderTableBody()}
           </TableBody>
         </Table>
       </div>

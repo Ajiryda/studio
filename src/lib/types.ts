@@ -1,3 +1,4 @@
+
 export interface Student {
   id: number;
   name: string;
@@ -17,7 +18,7 @@ export interface Visit {
 }
 
 export interface Medication {
-    id: number;
+    id: string; // Changed to string to match Firestore document ID
     name: string;
     stock: number;
 }
