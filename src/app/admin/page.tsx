@@ -1,3 +1,4 @@
+
 "use client";
 
 import { MainLayout } from '@/components/main-layout';
@@ -6,15 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Download, Upload, Loader2 } from 'lucide-react';
+import { Download, Upload, Loader2, Database } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { batchAddStudents } from '@/lib/firebase-services';
+import { batchAddStudents, seedDatabaseWithStudents } from '@/lib/firebase-services';
 import type { Student } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -46,6 +48,7 @@ export default function AdminDashboardPage() {
 
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
 
 
@@ -118,6 +121,35 @@ export default function AdminDashboardPage() {
     };
     reader.readAsText(importFile);
   };
+  
+  const handleSeed = async () => {
+    setIsSeeding(true);
+    try {
+        const count = await seedDatabaseWithStudents();
+        if (count > 0) {
+             toast({
+                title: 'Database Terisi',
+                description: `${count} data siswa berhasil dimasukkan ke Firestore.`,
+            });
+        } else {
+             toast({
+                title: 'Database Sudah Terisi',
+                description: 'Tidak ada data baru yang ditambahkan.',
+                variant: 'default',
+            });
+        }
+    } catch (error) {
+        console.error("Seeding error:", error);
+        toast({
+          title: 'Gagal Mengisi Database',
+          description: error instanceof Error ? error.message : 'Terjadi kesalahan.',
+          variant: 'destructive',
+        });
+    } finally {
+        setIsSeeding(false);
+    }
+  }
+
 
   return (
     <MainLayout>
@@ -128,31 +160,61 @@ export default function AdminDashboardPage() {
       <div className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>Impor Data Siswa</CardTitle>
-            <CardDescription>Unggah file JSON untuk menambahkan banyak siswa sekaligus ke database.</CardDescription>
+            <CardTitle>Kelola Data Siswa</CardTitle>
+            <CardDescription>Isi database dengan data awal atau unggah file JSON untuk menambahkan siswa.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="json-file">File JSON Siswa</Label>
-                  <Input id="json-file" type="file" accept=".json" onChange={handleFileChange} />
-              </div>
-              {importFile && <p className="text-sm text-muted-foreground">File terpilih: {importFile.name}</p>}
+          <CardContent className="space-y-6">
+              <Alert>
+                <Database className="h-4 w-4" />
+                <AlertTitle>Opsi 1: Isi dengan Data Awal (Direkomendasikan)</AlertTitle>
+                <AlertDescription>
+                  Klik tombol ini untuk mengisi database Firestore Anda dengan daftar lengkap siswa yang sudah disiapkan. Ini adalah cara tercepat untuk memulai.
+                </AlertDescription>
+                 <div className="mt-4">
+                    <Button onClick={handleSeed} disabled={isSeeding}>
+                      {isSeeding ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Memproses...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="mr-2 h-4 w-4" />
+                          Isi Database Siswa
+                        </>
+                      )}
+                    </Button>
+                </div>
+              </Alert>
+
+              <Alert>
+                  <Upload className="h-4 w-4" />
+                  <AlertTitle>Opsi 2: Impor dari File JSON</AlertTitle>
+                  <AlertDescription>
+                    Jika Anda memiliki file JSON sendiri, Anda bisa mengunggahnya di sini. Pastikan formatnya benar.
+                  </AlertDescription>
+                   <div className="mt-4 space-y-4">
+                     <div className="grid w-full max-w-sm items-center gap-1.5">
+                        <Label htmlFor="json-file">File JSON Siswa</Label>
+                        <Input id="json-file" type="file" accept=".json" onChange={handleFileChange} />
+                    </div>
+                    {importFile && <p className="text-sm text-muted-foreground">File terpilih: {importFile.name}</p>}
+                    <Button onClick={handleImport} disabled={isImporting || !importFile}>
+                    {isImporting ? (
+                        <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Mengimpor...
+                        </>
+                    ) : (
+                        <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Impor Siswa dari JSON
+                        </>
+                    )}
+                    </Button>
+                   </div>
+              </Alert>
           </CardContent>
-           <CardContent>
-             <Button onClick={handleImport} disabled={isImporting || !importFile}>
-              {isImporting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Mengimpor...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Impor Siswa
-                </>
-              )}
-            </Button>
-           </CardContent>
         </Card>
       
         <Card>
@@ -260,3 +322,5 @@ export default function AdminDashboardPage() {
     </MainLayout>
   );
 }
+
+    

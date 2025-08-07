@@ -4,6 +4,7 @@
 import { db } from './firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
 import type { Medication, Visit, Student } from './types';
+import { students as mockStudents } from './mock-data';
 
 const MEDICATIONS_COLLECTION = 'medications';
 const VISITS_COLLECTION = 'visits';
@@ -69,14 +70,25 @@ export const getStudentsByClass = async (className: string): Promise<Student[]> 
 export const batchAddStudents = async (students: Student[]): Promise<void> => {
     const batch = writeBatch(db);
     students.forEach((student) => {
-        // Use student.id as the document ID in Firestore
-        const docRef = doc(db, STUDENTS_COLLECTION, student.id);
+        // Use student.id as the document ID in Firestore. Ensure it's a string.
+        const docRef = doc(db, STUDENTS_COLLECTION, student.id.toString());
         batch.set(docRef, {
             name: student.name,
             class: student.class,
         });
     });
     await batch.commit();
+}
+
+export const seedDatabaseWithStudents = async (): Promise<number> => {
+    const studentsCollection = collection(db, STUDENTS_COLLECTION);
+    const existingStudents = await getDocs(studentsCollection);
+    if (!existingStudents.empty) {
+        // Data already exists
+        return 0;
+    }
+    await batchAddStudents(mockStudents);
+    return mockStudents.length;
 }
 
 // Visit Services
@@ -132,3 +144,5 @@ export const updateVisit = async (id: string, updates: Partial<Visit>): Promise<
     }
     await updateDoc(docRef, dataToUpdate);
 };
+
+    
