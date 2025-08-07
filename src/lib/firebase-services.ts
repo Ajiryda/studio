@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from './firebase';
@@ -46,12 +47,14 @@ export const getStudents = async (): Promise<Student[]> => {
 };
 
 export const getStudentsByClass = async (className: string): Promise<Student[]> => {
-    const q = query(collection(db, STUDENTS_COLLECTION), where('class', '==', className), orderBy('name'));
+    const q = query(collection(db, STUDENTS_COLLECTION), where('class', '==', className));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const students = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
     } as Student));
+    // Sort students by name client-side
+    return students.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Visit Services
