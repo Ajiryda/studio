@@ -3,12 +3,14 @@
 
 import { db } from './firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
-import type { Medication, Visit, Student } from './types';
+import type { Medication, Visit, Student, Screening } from './types';
 import { students as mockStudents } from './mock-data';
 
 const MEDICATIONS_COLLECTION = 'medications';
 const VISITS_COLLECTION = 'visits';
 const STUDENTS_COLLECTION = 'students';
+const SCREENINGS_COLLECTION = 'screenings';
+
 
 // Medication Services
 export const getMedications = async (): Promise<Medication[]> => {
@@ -145,4 +147,24 @@ export const updateVisit = async (id: string, updates: Partial<Visit>): Promise<
     await updateDoc(docRef, dataToUpdate);
 };
 
-    
+// Screening Services
+export const addScreening = async (screeningData: Omit<Screening, 'id'>): Promise<Screening> => {
+    const docRef = await addDoc(collection(db, SCREENINGS_COLLECTION), {
+        ...screeningData,
+        screeningDate: Timestamp.fromDate(new Date(screeningData.screeningDate))
+    });
+    return { id: docRef.id, ...screeningData };
+}
+
+export const getScreenings = async (): Promise<Screening[]> => {
+    const q = query(collection(db, SCREENINGS_COLLECTION), orderBy('screeningDate', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            screeningDate: (data.screeningDate as Timestamp).toDate().toISOString(),
+        } as Screening;
+    });
+};

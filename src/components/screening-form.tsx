@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,8 +22,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  SelectGroup,
-  SelectLabel,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
@@ -30,9 +29,9 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import { generateScreeningRecommendation } from "@/ai/flows/generate-screening-recommendation";
-import type { ScreeningResult, Student } from "@/lib/types";
+import type { ScreeningResult, Student, Screening } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getStudents, getStudentsByClass } from "@/lib/firebase-services";
+import { getStudents, getStudentsByClass, addScreening } from "@/lib/firebase-services";
 
 
 const screeningFormSchema = z.object({
@@ -40,21 +39,21 @@ const screeningFormSchema = z.object({
   studentId: z.string().min(1, { message: "Silakan pilih seorang siswa." }),
   height: z.coerce.number().positive({ message: "Tinggi badan harus positif." }),
   weight: z.coerce.number().positive({ message: "Berat badan harus positif." }),
-  visionProblem: z.string(),
-  hearingProblem: z.string(),
+  visionProblem: z.string({ required_error: "Pilihan ini wajib diisi." }),
+  hearingProblem: z.string({ required_error: "Pilihan ini wajib diisi." }),
   dentalIssues: z.array(z.string()),
   otherComplaints: z.string().optional(),
-  feelsSad: z.string(),
-  feelsAnxious: z.string(),
-  feelsUnmotivated: z.string(),
-  feelsLonely: z.string(),
-  breakfastFrequency: z.string(),
-  waterConsumption: z.string(),
-  fruitVegConsumption: z.string(),
-  snackHabits: z.string(),
-  sleepDuration: z.string(),
-  screenTime: z.string(),
-  physicalActivity: z.string(),
+  feelsSad: z.string({ required_error: "Pilihan ini wajib diisi." }),
+  feelsAnxious: z.string({ required_error: "Pilihan ini wajib diisi." }),
+  feelsUnmotivated: z.string({ required_error: "Pilihan ini wajib diisi." }),
+  feelsLonely: z.string({ required_error: "Pilihan ini wajib diisi." }),
+  breakfastFrequency: z.string().min(1, { message: "Wajib diisi." }),
+  waterConsumption: z.string().min(1, { message: "Wajib diisi." }),
+  fruitVegConsumption: z.string().min(1, { message: "Wajib diisi." }),
+  snackHabits: z.string().min(1, { message: "Wajib diisi." }),
+  sleepDuration: z.string().min(1, { message: "Wajib diisi." }),
+  screenTime: z.string().min(1, { message: "Wajib diisi." }),
+  physicalActivity: z.string().min(1, { message: "Wajib diisi." }),
   smoking: z.string().optional(),
   alcohol: z.string().optional(),
   violence: z.string().optional(),
@@ -153,11 +152,27 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
       }
       
       const result = await generateScreeningRecommendation({ studentData: JSON.stringify({...data, studentName: student.name}) });
+
+      const screeningDataToSave: Omit<Screening, 'id'> = {
+        studentId: student.id,
+        studentName: student.name,
+        studentClass: student.class,
+        screeningDate: new Date().toISOString(),
+        ...result,
+      };
+
+      await addScreening(screeningDataToSave);
+      
       setResult(result);
+      toast({
+        title: "Skrining Berhasil Disimpan",
+        description: `Hasil skrining untuk ${student.name} telah disimpan.`,
+      });
+
 
     } catch (e) {
       console.error(e);
-      setError("Gagal membuat rekomendasi skrining. Silakan coba lagi.");
+      setError("Gagal membuat atau menyimpan rekomendasi skrining. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }

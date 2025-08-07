@@ -7,61 +7,81 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Download, Upload, Loader2, Database } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { useState } from 'react';
+import { Upload, Loader2, Database } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { batchAddStudents, seedDatabaseWithStudents } from '@/lib/firebase-services';
-import type { Student } from '@/lib/types';
+import { batchAddStudents, seedDatabaseWithStudents, getStudents, getScreenings } from '@/lib/firebase-services';
+import type { Student, Screening } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => jsPDF;
-}
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function AdminDashboardPage() {
-  // Mock data for demonstration
-  const screeningStatus = [
-    { class: '7A', screened: 28, total: 33 },
-    { class: '8B', screened: 30, total: 32 },
-    { class: '9F', screened: 25, total: 29 },
-  ];
-
-  const studentHistory = {
-    name: 'AGUNG WIBOWO',
-    class: '7A',
-    history: [
-      { date: '2024-05-10', physical: 'Sehat', mental: 'Normal', lifestyle: 'Perlu Pembinaan' },
-      { date: '2023-10-15', physical: 'Sehat', mental: 'Normal', lifestyle: 'Sehat' },
-    ],
-  };
   
-  const unscreenedStudents = [
-    { name: 'ADAM FURYANIAWAN PUTRA', class: '7A' },
-    { name: 'AGUNG WIBOWO', class: '7A' },
-    { name: 'AHMAD EDI SAPUTRA', class: '7A' },
-  ];
-
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [screenings, setScreenings] = useState<Screening[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const studentsData = await getStudents();
+        const screeningsData = await getScreenings();
+        setStudents(studentsData);
+        setScreenings(screeningsData);
+      } catch (error) {
+        console.error("Failed to fetch admin data:", error);
+        toast({
+          title: "Gagal Memuat Data",
+          description: "Tidak dapat mengambil data dari Firestore.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
 
 
-  const exportToPDF = () => {
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-    doc.text("Daftar Siswa Belum Skrining", 14, 16);
-    doc.autoTable({
-        startY: 20,
-        head: [['Nama Siswa', 'Kelas']],
-        body: unscreenedStudents.map(s => [s.name, s.class]),
-    });
-    doc.save('siswa-belum-skrining.pdf');
-  }
+  const screeningStatusData = useMemo(() => {
+    if (students.length === 0) return [];
+    
+    const studentsByClass = students.reduce((acc, student) => {
+      acc[student.class] = (acc[student.class] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const screenedStudentIds = new Set(screenings.map(s => s.studentId));
+    
+    const screenedByClass = students.reduce((acc, student) => {
+        if (screenedStudentIds.has(student.id)) {
+             acc[student.class] = (acc[student.class] || 0) + 1;
+        }
+        return acc;
+    }, {} as Record<string, number>);
+
+    return Object.keys(studentsByClass).sort().map(className => ({
+        name: className,
+        total: studentsByClass[className],
+        sudah: screenedByClass[className] || 0,
+        belum: studentsByClass[className] - (screenedByClass[className] || 0),
+    }));
+  }, [students, screenings]);
+
+  const recentScreenings = useMemo(() => {
+    return screenings.slice(0, 5);
+  }, [screenings]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -87,24 +107,25 @@ export default function AdminDashboardPage() {
         if (typeof text !== 'string') {
           throw new Error("Gagal membaca file");
         }
-        const students: Student[] = JSON.parse(text);
+        const studentsData: any[] = JSON.parse(text);
 
-        // Basic validation
-        if (!Array.isArray(students) || students.some(s => !s.id || !s.name || !s.class)) {
-             toast({
-                title: 'Format JSON tidak valid',
-                description: 'Pastikan file JSON adalah array dan setiap objek siswa memiliki "id", "name", dan "class".',
-                variant: 'destructive',
-            });
-            setIsImporting(false);
-            return;
-        }
+        // Basic validation and transformation
+        const validStudents: Student[] = studentsData.map(s => {
+             if (!s.id || !s.name || !s.class) {
+                throw new Error('Setiap objek siswa harus memiliki "id", "name", dan "class".');
+             }
+             return {
+                id: s.id.toString(),
+                name: s.name,
+                class: s.class,
+             }
+        });
         
-        await batchAddStudents(students);
+        await batchAddStudents(validStudents);
 
         toast({
           title: 'Impor Berhasil',
-          description: `${students.length} data siswa telah berhasil diunggah ke Firestore.`,
+          description: `${validStudents.length} data siswa telah berhasil diunggah ke Firestore.`,
         });
 
       } catch (error) {
@@ -150,6 +171,13 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const getStatusBadgeVariant = (status: string): "default" | "destructive" | "secondary" => {
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes("sehat") || lowerStatus.includes("normal")) return "default";
+    if (lowerStatus.includes("waspada") || lowerStatus.includes("perlu pembinaan")) return "secondary";
+    return "destructive";
+  };
+
 
   return (
     <MainLayout>
@@ -191,7 +219,7 @@ export default function AdminDashboardPage() {
                   <Upload className="h-4 w-4" />
                   <AlertTitle>Opsi 2: Impor dari File JSON</AlertTitle>
                   <AlertDescription>
-                    Jika Anda memiliki file JSON sendiri, Anda bisa mengunggahnya di sini. Pastikan formatnya benar.
+                    Jika Anda memiliki file JSON sendiri, Anda bisa mengunggahnya di sini. Pastikan setiap siswa memiliki "id" (bisa angka atau string), "name", dan "class".
                   </AlertDescription>
                    <div className="mt-4 space-y-4">
                      <div className="grid w-full max-w-sm items-center gap-1.5">
@@ -220,107 +248,76 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Statistik Skrining per Kelas</CardTitle>
-            <CardDescription>Ringkasan jumlah siswa yang sudah dan belum diskrining per kelas.</CardDescription>
+            <CardDescription>Visualisasi jumlah siswa yang sudah dan belum diskrining per kelas.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kelas</TableHead>
-                  <TableHead>Progres</TableHead>
-                  <TableHead className="text-right">Jumlah</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {screeningStatus.map((status) => (
-                  <TableRow key={status.class}>
-                    <TableCell className="font-medium">{status.class}</TableCell>
-                    <TableCell>
-                      <div className="h-4 w-full rounded-full bg-secondary">
-                        <div
-                          className="h-4 rounded-full bg-primary"
-                          style={{ width: `${(status.screened / status.total) * 100}%` }}
-                        ></div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">{`${status.screened}/${status.total}`}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {loading ? (
+                 <div className="h-72 w-full flex items-center justify-center">
+                    <Skeleton className="h-64 w-full" />
+                 </div>
+            ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={screeningStatusData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                        <XAxis dataKey="name" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}/>
+                        <Legend />
+                        <Bar dataKey="sudah" stackId="a" fill="hsl(var(--primary))" name="Sudah Skrining" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="belum" stackId="a" fill="hsl(var(--secondary))" name="Belum Skrining" radius={[4, 4, 0, 0]}/>
+                    </BarChart>
+                </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Riwayat Skrining Siswa</CardTitle>
-            <CardDescription>Lihat riwayat hasil skrining untuk setiap siswa.</CardDescription>
+            <CardTitle>Riwayat Skrining Terbaru</CardTitle>
+            <CardDescription>Menampilkan 5 hasil skrining terakhir yang dimasukkan.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Student search would go here */}
-            <div className="mb-4">
-              <p className="font-semibold">{studentHistory.name} - {studentHistory.class}</p>
-            </div>
-            <Table>
-               <TableHeader>
-                  <TableRow>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Fisik</TableHead>
-                    <TableHead>Mental</TableHead>
-                    <TableHead>Pola Hidup</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {studentHistory.history.map((entry, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{entry.date}</TableCell>
-                      <TableCell><Badge variant={entry.physical === 'Sehat' ? 'default' : 'destructive'}>{entry.physical}</Badge></TableCell>
-                      <TableCell><Badge variant={entry.mental === 'Normal' ? 'default' : 'destructive'}>{entry.mental}</Badge></TableCell>
-                      <TableCell><Badge variant={entry.lifestyle === 'Sehat' ? 'default' : 'destructive'}>{entry.lifestyle}</Badge></TableCell>
+             {loading ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+            ) : (
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Siswa</TableHead>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Fisik</TableHead>
+                        <TableHead>Mental</TableHead>
+                        <TableHead>Pola Hidup</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                    {recentScreenings.length > 0 ? recentScreenings.map((entry) => (
+                        <TableRow key={entry.id}>
+                        <TableCell>
+                            <div className="font-medium">{entry.studentName}</div>
+                            <div className="text-sm text-muted-foreground">{entry.studentClass}</div>
+                        </TableCell>
+                        <TableCell>{new Date(entry.screeningDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                        <TableCell><Badge variant={getStatusBadgeVariant(entry.physicalStatus)}>{entry.physicalStatus}</Badge></TableCell>
+                        <TableCell><Badge variant={getStatusBadgeVariant(entry.mentalHealth)}>{entry.mentalHealth}</Badge></TableCell>
+                        <TableCell><Badge variant={getStatusBadgeVariant(entry.lifestyle)}>{entry.lifestyle}</Badge></TableCell>
+                        </TableRow>
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">Belum ada data skrining.</TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+            )}
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Siswa Belum Skrining</CardTitle>
-              <CardDescription>Daftar siswa yang perlu diingatkan untuk melakukan skrining.</CardDescription>
-            </div>
-            <Button size="sm" variant="outline" onClick={exportToPDF}>
-                <Download className="mr-2 h-4 w-4"/>
-                Ekspor Data
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama Siswa</TableHead>
-                    <TableHead>Kelas</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {unscreenedStudents.map((student, index) => (
-                         <TableRow key={index}>
-                            <TableCell className="font-medium">{student.name}</TableCell>
-                            <TableCell>{student.class}</TableCell>
-                            <TableCell className="text-right">
-                                <Button size="sm" variant="secondary">Ingatkan</Button>
-                            </TableCell>
-                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
     </MainLayout>
   );
 }
-
-    

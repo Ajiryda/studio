@@ -1,4 +1,5 @@
 
+
 export interface Student {
   id: string;
   name: string;
@@ -24,9 +25,15 @@ export interface Medication {
 }
 
 export interface Screening {
+    id: string;
     studentId: string;
     studentName: string;
-    symptoms: string;
+    studentClass: string;
+    screeningDate: string; // ISO string
+    physicalStatus: string;
+    mentalHealth: string;
+    lifestyle: string;
+    recommendations: string[];
 }
 
 export interface ScreeningResult {
