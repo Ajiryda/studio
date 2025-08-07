@@ -118,6 +118,18 @@ export function UksTrafficClient() {
   const currentlyInUKS = visits.filter((v) => !v.exitTime);
   const visitHistory = visits.filter((v) => v.exitTime);
 
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -224,7 +236,7 @@ export function UksTrafficClient() {
                     <Badge variant="secondary">{visit.reason}</Badge>
                   </TableCell>
                   <TableCell>
-                    {new Date(visit.entryTime).toLocaleTimeString()}
+                    {formatDateTime(visit.entryTime)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -270,11 +282,11 @@ export function UksTrafficClient() {
                   <Badge variant="outline">{visit.reason}</Badge>
                 </TableCell>
                 <TableCell>
-                  {new Date(visit.entryTime).toLocaleTimeString()}
+                  {formatDateTime(visit.entryTime)}
                 </TableCell>
                 <TableCell>
                   {visit.exitTime
-                    ? new Date(visit.exitTime).toLocaleTimeString()
+                    ? formatDateTime(visit.exitTime)
                     : '-'}
                 </TableCell>
               </TableRow>
