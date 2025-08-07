@@ -26,13 +26,14 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useMemo, useState } from "react";
-import { students } from "@/lib/mock-data";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import { generateScreeningRecommendation } from "@/ai/flows/generate-screening-recommendation";
 import type { ScreeningResult, Student } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getStudents, getStudentsByClass } from "@/lib/firebase-services";
+
 
 const screeningFormSchema = z.object({
   class: z.string().min(1, { message: "Silakan pilih kelas." }),
@@ -74,8 +75,10 @@ interface ScreeningFormProps {
 export function ScreeningForm({ setResult, setLoading, setError, loading, error }: ScreeningFormProps) {
   const { toast } = useToast();
   const [bmi, setBmi] = useState<number | null>(null);
-  const [selectedClass, setSelectedClass] = useState('');
+
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
   const form = useForm<ScreeningFormValues>({
     resolver: zodResolver(screeningFormSchema),
@@ -90,18 +93,44 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
   const weight = form.watch("weight");
   const studentClass = form.watch("class");
 
-  const classNames = useMemo(() => {
-    return [...new Set(students.map(s => s.class))].sort();
-  }, []);
+  const fetchStudentsData = useCallback(async () => {
+    try {
+      const students = await getStudents();
+      setAllStudents(students);
+    } catch (error) {
+      console.error("Failed to fetch students", error);
+      toast({ title: "Gagal memuat data siswa", variant: "destructive" });
+    }
+  }, [toast]);
 
   useEffect(() => {
-      if (studentClass) {
-          setStudentsInClass(students.filter(s => s.class === studentClass));
-          form.setValue('studentId', '');
-      } else {
-          setStudentsInClass([]);
+    fetchStudentsData();
+  }, [fetchStudentsData]);
+
+  const classNames = useMemo(() => {
+    return [...new Set(allStudents.map(s => s.class))].sort();
+  }, [allStudents]);
+
+  useEffect(() => {
+      const fetchStudentsInClass = async () => {
+        if (studentClass) {
+            setLoadingStudents(true);
+            form.setValue('studentId', '');
+            try {
+              const students = await getStudentsByClass(studentClass);
+              setStudentsInClass(students);
+            } catch (error) {
+               console.error("Failed to fetch students in class", error);
+               toast({ title: "Gagal memuat siswa di kelas", variant: "destructive" });
+            } finally {
+              setLoadingStudents(false);
+            }
+        } else {
+            setStudentsInClass([]);
+        }
       }
-  }, [studentClass, form]);
+      fetchStudentsInClass();
+  }, [studentClass, form, toast]);
 
 
   useEffect(() => {
@@ -118,7 +147,7 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
     try {
       setLoading(true);
       setError(null);
-      const student = students.find(s => s.id.toString() === data.studentId);
+      const student = studentsInClass.find(s => s.id.toString() === data.studentId);
       if (!student) {
         throw new Error("Siswa tidak ditemukan");
       }
@@ -177,10 +206,10 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Siswa</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={!studentClass}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={!studentClass || loadingStudents}>
                     <FormControl>
                     <SelectTrigger>
-                        <SelectValue placeholder="Pilih siswa" />
+                        <SelectValue placeholder={loadingStudents ? "Memuat..." : "Pilih siswa"} />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>

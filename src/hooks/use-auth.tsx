@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/lib/types';
-import { students } from '@/lib/mock-data';
+import { getStudentById } from '@/lib/firebase-services';
 
 interface AuthContextType {
   user: User | null;
@@ -56,10 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
 
-    // Student login
-    const student = students.find(s => s.id.toString() === id);
+    // Student login from Firestore
+    const student = await getStudentById(id);
     if (student && pass === id) { // Password is the same as student ID
-      const studentUser: User = { id: student.id.toString(), name: student.name, role: 'siswa', class: student.class };
+      const studentUser: User = { id: student.id, name: student.name, role: 'siswa', class: student.class };
       localStorage.setItem('healthcheck-user', JSON.stringify(studentUser));
       setUser(studentUser);
       setLoading(false);

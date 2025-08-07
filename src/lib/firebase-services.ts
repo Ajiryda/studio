@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where, Timestamp, getDoc } from 'firebase/firestore';
 import type { Medication, Visit, Student } from './types';
 
 const MEDICATIONS_COLLECTION = 'medications';
@@ -44,6 +44,16 @@ export const getStudents = async (): Promise<Student[]> => {
       ...doc.data()
     } as Student));
 };
+
+export const getStudentById = async (id: string): Promise<Student | null> => {
+    const docRef = doc(db, STUDENTS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Student;
+    }
+    return null;
+}
+
 
 export const getStudentsByClass = async (className: string): Promise<Student[]> => {
     const q = query(collection(db, STUDENTS_COLLECTION), where('class', '==', className));

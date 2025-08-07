@@ -24,7 +24,7 @@ export interface Medication {
 }
 
 export interface Screening {
-    studentId: number;
+    studentId: string;
     studentName: string;
     symptoms: string;
 }

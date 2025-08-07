@@ -26,8 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Visit, Student } from '@/lib/types';
-import { getVisits, addVisit, updateVisit, getStudentsByClass } from '@/lib/firebase-services';
-import { students as allStudentsMock } from '@/lib/mock-data'; // For class list only
+import { getVisits, addVisit, updateVisit, getStudents, getStudentsByClass } from '@/lib/firebase-services';
 import {
   Select,
   SelectContent,
@@ -41,6 +40,7 @@ import { Loader2 } from 'lucide-react';
 
 export function UksTrafficClient() {
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,16 +48,18 @@ export function UksTrafficClient() {
   
   const [selectedClass, setSelectedClass] = useState('');
   const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [reason, setReason] = useState('');
 
-  const fetchVisits = useCallback(async () => {
+  const fetchInitialData = useCallback(async () => {
     try {
         setLoading(true);
-        const fetchedVisits = await getVisits();
+        const [fetchedVisits, fetchedStudents] = await Promise.all([getVisits(), getStudents()]);
         setVisits(fetchedVisits);
+        setAllStudents(fetchedStudents);
     } catch (error) {
-        toast({ title: "Gagal memuat data kunjungan", variant: "destructive" });
+        toast({ title: "Gagal memuat data awal", variant: "destructive" });
         console.error(error);
     } finally {
         setLoading(false);
@@ -65,26 +67,35 @@ export function UksTrafficClient() {
   }, [toast]);
 
   useEffect(() => {
-    fetchVisits();
-  }, [fetchVisits]);
+    fetchInitialData();
+  }, [fetchInitialData]);
 
   const classNames = useMemo(() => {
-    return [...new Set(allStudentsMock.map(s => s.class))].sort();
-  }, []);
+    if (allStudents.length === 0) return [];
+    return [...new Set(allStudents.map(s => s.class))].sort();
+  }, [allStudents]);
 
   useEffect(() => {
     const fetchStudents = async () => {
         if (selectedClass) {
+            setLoadingStudents(true);
             setStudentsInClass([]);
             setSelectedStudent(null);
-            const fetchedStudents = await getStudentsByClass(selectedClass);
-            setStudentsInClass(fetchedStudents);
+            try {
+              const fetchedStudents = await getStudentsByClass(selectedClass);
+              setStudentsInClass(fetchedStudents);
+            } catch (error) {
+              console.error("Failed to fetch students by class", error);
+              toast({ title: "Gagal memuat daftar siswa", variant: "destructive" });
+            } finally {
+              setLoadingStudents(false);
+            }
         } else {
             setStudentsInClass([]);
         }
     }
     fetchStudents();
-  }, [selectedClass]);
+  }, [selectedClass, toast]);
 
   const resetDialog = () => {
     setSelectedClass('');
@@ -116,7 +127,7 @@ export function UksTrafficClient() {
             title: 'Kunjungan Siswa Dicatat',
             description: `${selectedStudent.name} telah dicatat masuk ke UKS.`,
         });
-        fetchVisits(); // Refresh list
+        fetchInitialData(); // Refresh list of visits
         resetDialog();
         setDialogOpen(false);
     } catch (error) {
@@ -137,7 +148,7 @@ export function UksTrafficClient() {
           title: 'Siswa Dicatat Keluar',
           description: `${visit.studentName} telah dicatat keluar dari UKS.`,
       });
-      fetchVisits(); // Refresh list
+      fetchInitialData(); // Refresh list
     } catch(error) {
         toast({ title: 'Gagal mencatat keluar', variant: 'destructive'});
         console.error(error);
@@ -163,7 +174,7 @@ export function UksTrafficClient() {
     if (loading) {
         return (
              <TableRow>
-                <TableCell colSpan={4} className="h-24">
+                <TableCell colSpan={isCurrent ? 4 : 4} className="h-24">
                      <div className="space-y-2">
                         <Skeleton className="h-4 w-3/4 mx-auto" />
                         <Skeleton className="h-4 w-1/2 mx-auto" />
@@ -175,7 +186,7 @@ export function UksTrafficClient() {
     if (data.length === 0) {
         return (
             <TableRow>
-                <TableCell colSpan={4} className="text-center h-24">
+                <TableCell colSpan={isCurrent ? 4 : 4} className="text-center h-24">
                   {isCurrent ? 'Tidak ada siswa di UKS saat ini.' : 'Belum ada riwayat kunjungan.'}
                 </TableCell>
             </TableRow>
@@ -266,10 +277,10 @@ export function UksTrafficClient() {
                         setSelectedStudent(student || null);
                     }}
                     value={selectedStudent?.id || ''}
-                    disabled={!selectedClass || saving}
+                    disabled={!selectedClass || saving || loadingStudents}
                   >
                     <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder={studentsInClass.length > 0 ? "Pilih siswa" : "Memuat..."} />
+                      <SelectValue placeholder={loadingStudents ? "Memuat..." : "Pilih siswa"} />
                     </SelectTrigger>
                     <SelectContent>
                       {studentsInClass.map((student) => (
