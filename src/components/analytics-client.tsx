@@ -9,12 +9,15 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
-import { generateHealthTrendAnalysis, GenerateHealthTrendAnalysisOutput } from '@/ai/flows/generate-health-trend-analysis';
 import { uksVisits, medications } from '@/lib/mock-data';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from './ui/chart';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from 'recharts';
+
+interface AnalysisResult {
+  summary: string;
+  commonComplaints: { complaint: string; count: number }[];
+  stockRecommendations: { medicationName: string; recommendation: string }[];
+}
 
 const chartConfig = {
   count: {
@@ -23,48 +26,57 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+// Simple analysis function to replace the AI flow
+const runSimpleAnalysis = (visits: typeof uksVisits, stock: typeof medications): AnalysisResult => {
+  const complaintCounts: { [key: string]: number } = {};
+  visits.forEach(visit => {
+    complaintCounts[visit.reason] = (complaintCounts[visit.reason] || 0) + 1;
+  });
+
+  const commonComplaints = Object.entries(complaintCounts)
+    .map(([complaint, count]) => ({ complaint, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const stockRecommendations = stock.map(med => {
+    const isNeeded = commonComplaints.some(c => c.complaint.toLowerCase().includes(med.name.toLowerCase().slice(0, 5)));
+    let recommendation = "Stok cukup";
+    if (med.stock < 50 && isNeeded) {
+        recommendation = "Segera restock";
+    } else if (med.stock < 50) {
+        recommendation = "Perlu dipantau";
+    }
+    return {
+      medicationName: med.name,
+      recommendation,
+    };
+  });
+  
+  const mostCommonComplaint = commonComplaints.length > 0 ? commonComplaints[0].complaint : 'tidak ada keluhan';
+
+  const summary = `Analisis data menunjukkan keluhan paling umum adalah ${mostCommonComplaint}. Beberapa stok obat perlu diperhatikan berdasarkan tren keluhan ini.`;
+
+  return { summary, commonComplaints, stockRecommendations };
+}
+
+
 export function AnalyticsClient() {
-  const [analysis, setAnalysis] = useState<GenerateHealthTrendAnalysisOutput | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const runAnalysis = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await generateHealthTrendAnalysis({
-          uksVisits: JSON.stringify(uksVisits),
-          medicationStock: JSON.stringify(medications),
-        });
-        setAnalysis(result);
-      } catch (err) {
-        console.error(err);
-        setError("Gagal menganalisis data. Silakan coba lagi nanti.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    runAnalysis();
+    const analysisResult = runSimpleAnalysis(uksVisits, medications);
+    setAnalysis(analysisResult);
+    setLoading(false);
   }, []);
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <Terminal className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
 
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Ringkasan Kesehatan Berbasis AI</CardTitle>
+          <CardTitle>Ringkasan Kesehatan</CardTitle>
           <CardDescription>
-            Ringkasan ini dibuat oleh AI berdasarkan data kunjungan UKS dan stok obat.
+            Ringkasan ini dibuat berdasarkan data kunjungan UKS dan stok obat.
           </CardDescription>
         </CardHeader>
         <CardContent>
