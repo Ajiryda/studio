@@ -35,6 +35,7 @@ import type { ScreeningResult, Student } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const screeningFormSchema = z.object({
+  class: z.string().min(1, { message: "Silakan pilih kelas." }),
   studentId: z.string().min(1, { message: "Silakan pilih seorang siswa." }),
   height: z.coerce.number().positive({ message: "Tinggi badan harus positif." }),
   weight: z.coerce.number().positive({ message: "Berat badan harus positif." }),
@@ -73,27 +74,35 @@ interface ScreeningFormProps {
 export function ScreeningForm({ setResult, setLoading, setError, loading, error }: ScreeningFormProps) {
   const { toast } = useToast();
   const [bmi, setBmi] = useState<number | null>(null);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
 
   const form = useForm<ScreeningFormValues>({
     resolver: zodResolver(screeningFormSchema),
     defaultValues: {
       dentalIssues: [],
+      class: '',
+      studentId: '',
     },
   });
 
   const height = form.watch("height");
   const weight = form.watch("weight");
+  const studentClass = form.watch("class");
 
-  const groupedStudents = useMemo(() => {
-    return students.reduce((acc, student) => {
-      const { class: studentClass } = student;
-      if (!acc[studentClass]) {
-        acc[studentClass] = [];
-      }
-      acc[studentClass].push(student);
-      return acc;
-    }, {} as Record<string, Student[]>);
+  const classNames = useMemo(() => {
+    return [...new Set(students.map(s => s.class))].sort();
   }, []);
+
+  useEffect(() => {
+      if (studentClass) {
+          setStudentsInClass(students.filter(s => s.class === studentClass));
+          form.setValue('studentId', '');
+      } else {
+          setStudentsInClass([]);
+      }
+  }, [studentClass, form]);
+
 
   useEffect(() => {
     if (height > 0 && weight > 0) {
@@ -137,35 +146,56 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
         )}
 
         <h2 className="text-xl font-semibold border-b pb-2">1. Profil Siswa</h2>
-        <FormField
-          control={form.control}
-          name="studentId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Siswa</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih seorang siswa" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.entries(groupedStudents).map(([className, studentsInClass]) => (
-                    <SelectGroup key={className}>
-                      <SelectLabel>{className}</SelectLabel>
-                      {studentsInClass.map((student) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+            control={form.control}
+            name="class"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Kelas</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih kelas" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {classNames.map(className => (
+                            <SelectItem key={className} value={className}>
+                                {className}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="studentId"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Siswa</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value} disabled={!studentClass}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih siswa" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {studentsInClass.map((student) => (
                         <SelectItem key={student.id} value={student.id.toString()}>
-                          {student.name}
+                        {student.name}
                         </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                    ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         
         <h2 className="text-xl font-semibold border-b pb-2">2. Skrining Kesehatan Fisik</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

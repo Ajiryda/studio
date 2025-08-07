@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import type { Visit } from '@/lib/types';
+import type { Visit, Student } from '@/lib/types';
 import { uksVisits as initialVisits, students } from '@/lib/mock-data';
 import {
   Select,
@@ -36,28 +36,50 @@ import {
 
 export function UksTrafficClient() {
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [newVisit, setNewVisit] = useState({
-    studentId: '',
-    reason: '',
-  });
   const [isDialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+  
+  const [selectedClass, setSelectedClass] = useState('');
+  const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [reason, setReason] = useState('');
+
 
   useEffect(() => {
     setVisits(initialVisits);
   }, []);
+  
+  const classNames = useMemo(() => {
+    return [...new Set(students.map(s => s.class))].sort();
+  }, []);
+
+  useEffect(() => {
+    if (selectedClass) {
+        setStudentsInClass(students.filter(s => s.class === selectedClass));
+        setSelectedStudentId('');
+    } else {
+        setStudentsInClass([]);
+    }
+  }, [selectedClass]);
+
+  const resetDialog = () => {
+    setSelectedClass('');
+    setStudentsInClass([]);
+    setSelectedStudentId('');
+    setReason('');
+  }
 
   const handleLogEntry = () => {
-    if (!newVisit.studentId || !newVisit.reason) {
+    if (!selectedStudentId || !reason) {
       toast({
         title: 'Error',
-        description: 'Silakan pilih siswa dan masukkan alasan.',
+        description: 'Silakan pilih kelas, siswa, dan masukkan alasan.',
         variant: 'destructive',
       });
       return;
     }
 
-    const student = students.find((s) => s.id === parseInt(newVisit.studentId));
+    const student = students.find((s) => s.id.toString() === selectedStudentId);
     if (!student) return;
 
     const newEntry: Visit = {
@@ -65,7 +87,7 @@ export function UksTrafficClient() {
       studentId: student.id,
       studentName: student.name,
       studentClass: student.class,
-      reason: newVisit.reason,
+      reason: reason,
       entryTime: new Date().toISOString(),
       exitTime: null,
     };
@@ -74,7 +96,7 @@ export function UksTrafficClient() {
       title: 'Kunjungan Siswa Dicatat',
       description: `${student.name} telah dicatat masuk ke UKS.`,
     });
-    setNewVisit({ studentId: '', reason: '' });
+    resetDialog();
     setDialogOpen(false);
   };
 
@@ -101,7 +123,12 @@ export function UksTrafficClient() {
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Saat ini di UKS</h2>
-          <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) {
+                resetDialog();
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>Catat Kunjungan Siswa</Button>
             </DialogTrigger>
@@ -113,22 +140,42 @@ export function UksTrafficClient() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="class" className="text-right">
+                    Kelas
+                  </Label>
+                  <Select
+                    onValueChange={setSelectedClass}
+                    value={selectedClass}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Pilih kelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classNames.map((className) => (
+                        <SelectItem key={className} value={className}>
+                          {className}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="student" className="text-right">
                     Siswa
                   </Label>
                   <Select
-                    onValueChange={(value) =>
-                      setNewVisit({ ...newVisit, studentId: value })
-                    }
+                    onValueChange={setSelectedStudentId}
+                    value={selectedStudentId}
+                    disabled={!selectedClass}
                   >
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Pilih siswa" />
                     </SelectTrigger>
                     <SelectContent>
-                      {students.map((student) => (
+                      {studentsInClass.map((student) => (
                         <SelectItem key={student.id} value={student.id.toString()}>
-                          {student.name} - {student.class}
+                          {student.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -141,10 +188,8 @@ export function UksTrafficClient() {
                   <Input
                     id="reason"
                     className="col-span-3"
-                    value={newVisit.reason}
-                    onChange={(e) =>
-                      setNewVisit({ ...newVisit, reason: e.target.value })
-                    }
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
                     placeholder="Contoh: Sakit Kepala"
                   />
                 </div>
