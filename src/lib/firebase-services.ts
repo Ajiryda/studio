@@ -56,7 +56,7 @@ export const getStudentById = async (id: string): Promise<Student | null> => {
 
 
 export const getStudentsByClass = async (className: string): Promise<Student[]> => {
-    const q = query(collection(db, STUDENTS_COLLECTION), where('class', '==', className), orderBy('name'));
+    const q = query(collection(db, STUDENTS_COLLECTION), where('class', '==', className));
     const querySnapshot = await getDocs(q);
     const students = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -68,9 +68,10 @@ export const getStudentsByClass = async (className: string): Promise<Student[]> 
 
 export const batchAddStudents = async (students: Student[]): Promise<void> => {
     const batch = writeBatch(db);
+    const studentsCollection = collection(db, STUDENTS_COLLECTION);
     students.forEach((student) => {
         // Use student.id as the document ID in Firestore
-        const docRef = doc(db, STUDENTS_COLLECTION, student.id);
+        const docRef = doc(studentsCollection, student.id);
         batch.set(docRef, {
             name: student.name,
             class: student.class,
