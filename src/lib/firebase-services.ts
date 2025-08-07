@@ -68,10 +68,9 @@ export const getStudentsByClass = async (className: string): Promise<Student[]> 
 
 export const batchAddStudents = async (students: Student[]): Promise<void> => {
     const batch = writeBatch(db);
-    const studentsCollection = collection(db, STUDENTS_COLLECTION);
     students.forEach((student) => {
         // Use student.id as the document ID in Firestore
-        const docRef = doc(studentsCollection, student.id);
+        const docRef = doc(db, STUDENTS_COLLECTION, student.id);
         batch.set(docRef, {
             name: student.name,
             class: student.class,
