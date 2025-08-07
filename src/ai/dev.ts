@@ -9,6 +9,4 @@ if (isProd()) {
 import {config} from 'dotenv';
 config();
 
-import '@/ai/flows/generate-screening-recommendation.ts';
-
 // Impor flow baru di sini
