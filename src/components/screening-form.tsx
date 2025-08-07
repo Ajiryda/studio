@@ -28,7 +28,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
-import { generateScreeningRecommendation } from "@/ai/flows/generate-screening-recommendation";
 import type { ScreeningResult, Student, Screening } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getStudents, getStudentsByClass, addScreening } from "@/lib/firebase-services";
@@ -70,6 +69,45 @@ interface ScreeningFormProps {
   loading: boolean;
   error: string | null;
 }
+
+const getSimpleStatus = (data: ScreeningFormValues, bmi: number | null): ScreeningResult => {
+    // Physical Status
+    let physicalStatus = "Sehat";
+    if (bmi && (bmi < 18.5 || bmi > 25) || data.visionProblem === 'ya' || data.hearingProblem === 'ya' || data.dentalIssues.length > 0 || data.otherComplaints) {
+        physicalStatus = "Perlu Tindak Lanjut";
+    }
+
+    // Mental Health Status
+    let mentalHealth = "Normal";
+    const mentalHealthYesCount = [data.feelsSad, data.feelsAnxious, data.feelsUnmotivated, data.feelsLonely].filter(v => v === 'ya').length;
+    if (data.selfHarm === 'pernah' || data.violence === 'pernah' || data.bullying === 'pernah' || mentalHealthYesCount >= 3) {
+        mentalHealth = "Perlu Intervensi";
+    } else if (mentalHealthYesCount > 0) {
+        mentalHealth = "Waspada";
+    }
+
+    // Lifestyle Status
+    let lifestyle = "Sehat";
+    const sleep = parseInt(data.sleepDuration.split(" ")[0]);
+    if ( (isNaN(sleep) || sleep < 7) || data.smoking === 'pernah' || data.alcohol === 'pernah' ) {
+        lifestyle = "Perlu Pembinaan";
+    }
+
+    // Recommendations (simple)
+    const recommendations: string[] = [];
+    if (physicalStatus !== 'Sehat') recommendations.push("Jadwalkan pemeriksaan fisik lebih lanjut dengan petugas UKS atau Puskesmas.");
+    if (mentalHealth !== 'Normal') recommendations.push("Disarankan untuk berkonsultasi dengan guru BK untuk mendiskusikan kondisi emosional.");
+    if (lifestyle !== 'Sehat') recommendations.push("Berikan edukasi mengenai pentingnya pola hidup sehat (pola makan, tidur cukup, dan olahraga).");
+    if (recommendations.length === 0) recommendations.push("Secara umum kondisi siswa baik. Pertahankan pola hidup sehat.");
+
+    return {
+        physicalStatus,
+        mentalHealth,
+        lifestyle,
+        recommendations
+    };
+}
+
 
 export function ScreeningForm({ setResult, setLoading, setError, loading, error }: ScreeningFormProps) {
   const { toast } = useToast();
@@ -151,16 +189,8 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
         throw new Error("Siswa tidak ditemukan");
       }
       
-      const heightInMeters = data.height / 100;
-      const finalBmi = data.weight / (heightInMeters * heightInMeters);
-
-      const dataForAI = {
-        ...data,
-        bmi: parseFloat(finalBmi.toFixed(1)),
-        studentName: student.name,
-      };
-
-      const result = await generateScreeningRecommendation({ studentData: JSON.stringify(dataForAI) });
+      // Generate status and recommendations locally
+      const result = getSimpleStatus(data, bmi);
 
       const screeningDataToSave: Omit<Screening, 'id'> = {
         studentId: student.id,
@@ -181,7 +211,7 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
 
     } catch (e) {
       console.error(e);
-      setError("Gagal membuat atau menyimpan rekomendasi skrining. Silakan coba lagi.");
+      setError("Gagal menyimpan hasil skrining. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -432,7 +462,7 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
         )} />
 
 
-        <Button type="submit" disabled={loading}>{loading ? 'Menganalisis...' : 'Simpan & Lihat Hasil Skrining'}</Button>
+        <Button type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan & Lihat Hasil Skrining'}</Button>
       </form>
     </Form>
   );
