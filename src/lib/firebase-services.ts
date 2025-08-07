@@ -90,8 +90,7 @@ export const addVisit = async (visit: Omit<Visit, 'id' | 'entryTime' | 'exitTime
 
 export const updateVisit = async (id: string, updates: Partial<Visit>): Promise<void> => {
     const docRef = doc(db, VISITS_COLLECTION, id);
-    // If updating exitTime, convert ISO string back to Timestamp
-    const dataToUpdate = { ...updates };
+    const dataToUpdate: { [key: string]: any } = { ...updates };
     if (updates.exitTime) {
       dataToUpdate.exitTime = Timestamp.fromDate(new Date(updates.exitTime));
     }
