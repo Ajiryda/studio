@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from './firebase';
@@ -71,6 +70,20 @@ export const getVisits = async (): Promise<Visit[]> => {
     } as Visit;
   });
 };
+
+export const getVisitsByStudent = async (studentId: string): Promise<Visit[]> => {
+    const q = query(collection(db, VISITS_COLLECTION), where('studentId', '==', studentId), orderBy('entryTime', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            entryTime: (data.entryTime as Timestamp).toDate().toISOString(),
+            exitTime: data.exitTime ? (data.exitTime as Timestamp).toDate().toISOString() : null,
+        } as Visit;
+    });
+}
 
 export const addVisit = async (visit: Omit<Visit, 'id' | 'entryTime' | 'exitTime'>): Promise<Visit> => {
   const newVisitData = {
