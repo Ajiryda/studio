@@ -21,21 +21,23 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { students } from "@/lib/mock-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import { generateScreeningRecommendation } from "@/ai/flows/generate-screening-recommendation";
-import type { ScreeningResult } from "@/lib/types";
+import type { ScreeningResult, Student } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const screeningFormSchema = z.object({
-  studentId: z.string().min(1, { message: "Please select a student." }),
-  height: z.coerce.number().positive({ message: "Height must be positive." }),
-  weight: z.coerce.number().positive({ message: "Weight must be positive." }),
+  studentId: z.string().min(1, { message: "Silakan pilih seorang siswa." }),
+  height: z.coerce.number().positive({ message: "Tinggi badan harus positif." }),
+  weight: z.coerce.number().positive({ message: "Berat badan harus positif." }),
   visionProblem: z.string(),
   hearingProblem: z.string(),
   dentalIssues: z.array(z.string()),
@@ -82,6 +84,17 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
   const height = form.watch("height");
   const weight = form.watch("weight");
 
+  const groupedStudents = useMemo(() => {
+    return students.reduce((acc, student) => {
+      const { class: studentClass } = student;
+      if (!acc[studentClass]) {
+        acc[studentClass] = [];
+      }
+      acc[studentClass].push(student);
+      return acc;
+    }, {} as Record<string, Student[]>);
+  }, []);
+
   useEffect(() => {
     if (height > 0 && weight > 0) {
       const heightInMeters = height / 100;
@@ -98,7 +111,7 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
       setError(null);
       const student = students.find(s => s.id.toString() === data.studentId);
       if (!student) {
-        throw new Error("Student not found");
+        throw new Error("Siswa tidak ditemukan");
       }
       
       const result = await generateScreeningRecommendation({ studentData: JSON.stringify({...data, studentName: student.name}) });
@@ -106,7 +119,7 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
 
     } catch (e) {
       console.error(e);
-      setError("Failed to generate screening recommendations. Please try again.");
+      setError("Gagal membuat rekomendasi skrining. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -129,18 +142,23 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
           name="studentId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Student</FormLabel>
+              <FormLabel>Siswa</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a student" />
+                    <SelectValue placeholder="Pilih seorang siswa" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {students.map((student) => (
-                    <SelectItem key={student.id} value={student.id.toString()}>
-                      {student.name} - {student.class}
-                    </SelectItem>
+                  {Object.entries(groupedStudents).map(([className, studentsInClass]) => (
+                    <SelectGroup key={className}>
+                      <SelectLabel>{className}</SelectLabel>
+                      {studentsInClass.map((student) => (
+                        <SelectItem key={student.id} value={student.id.toString()}>
+                          {student.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
@@ -180,7 +198,7 @@ export function ScreeningForm({ setResult, setLoading, setError, loading, error 
           <FormItem>
             <FormLabel>BMI</FormLabel>
             <FormControl>
-              <Input readOnly value={bmi ? bmi : "Enter height and weight"} />
+              <Input readOnly value={bmi ? bmi : "Masukkan tinggi & berat badan"} />
             </FormControl>
           </FormItem>
         </div>
