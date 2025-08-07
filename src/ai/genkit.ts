@@ -1,12 +1,8 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import next from '@genkit-ai/next';
-
+import {nextPlugin} from '@genkit-ai/next/plugin';
 
 export const ai = genkit({
-  plugins: [
-    googleAI(),
-    next(),
-  ],
+  plugins: [googleAI(), nextPlugin()],
   enableTracingAndMetrics: true,
 });
