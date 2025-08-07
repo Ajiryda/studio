@@ -6,9 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Download } from 'lucide-react';
+import { Download, Upload, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { batchAddStudents } from '@/lib/firebase-services';
+import type { Student } from '@/lib/types';
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -38,6 +44,11 @@ export default function AdminDashboardPage() {
     { name: 'AHMAD EDI SAPUTRA', class: '7A' },
   ];
 
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const { toast } = useToast();
+
+
   const exportToPDF = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
     doc.text("Daftar Siswa Belum Skrining", 14, 16);
@@ -49,6 +60,65 @@ export default function AdminDashboardPage() {
     doc.save('siswa-belum-skrining.pdf');
   }
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setImportFile(event.target.files[0]);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: 'Tidak ada file terpilih',
+        description: 'Silakan pilih file JSON untuk diimpor.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result;
+        if (typeof text !== 'string') {
+          throw new Error("Gagal membaca file");
+        }
+        const students: Student[] = JSON.parse(text);
+
+        // Basic validation
+        if (!Array.isArray(students) || students.some(s => !s.id || !s.name || !s.class)) {
+             toast({
+                title: 'Format JSON tidak valid',
+                description: 'Pastikan file JSON adalah array dan setiap objek siswa memiliki "id", "name", dan "class".',
+                variant: 'destructive',
+            });
+            setIsImporting(false);
+            return;
+        }
+        
+        await batchAddStudents(students);
+
+        toast({
+          title: 'Impor Berhasil',
+          description: `${students.length} data siswa telah berhasil diunggah ke Firestore.`,
+        });
+
+      } catch (error) {
+        console.error("Import error:", error);
+        toast({
+          title: 'Gagal Mengimpor',
+          description: error instanceof Error ? error.message : 'Terjadi kesalahan saat memproses file JSON.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsImporting(false);
+        setImportFile(null);
+      }
+    };
+    reader.readAsText(importFile);
+  };
+
   return (
     <MainLayout>
       <PageHeader
@@ -56,6 +126,35 @@ export default function AdminDashboardPage() {
         description="Pantau progres skrining kesehatan siswa dan kelola data."
       />
       <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Impor Data Siswa</CardTitle>
+            <CardDescription>Unggah file JSON untuk menambahkan banyak siswa sekaligus ke database.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="json-file">File JSON Siswa</Label>
+                  <Input id="json-file" type="file" accept=".json" onChange={handleFileChange} />
+              </div>
+              {importFile && <p className="text-sm text-muted-foreground">File terpilih: {importFile.name}</p>}
+          </CardContent>
+           <CardContent>
+             <Button onClick={handleImport} disabled={isImporting || !importFile}>
+              {isImporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Mengimpor...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Impor Siswa
+                </>
+              )}
+            </Button>
+           </CardContent>
+        </Card>
+      
         <Card>
           <CardHeader>
             <CardTitle>Statistik Skrining per Kelas</CardTitle>

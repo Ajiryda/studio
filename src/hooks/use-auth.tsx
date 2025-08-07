@@ -57,17 +57,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
     // Student login from Firestore
-    const student = await getStudentById(id);
-    if (student && pass === id) { // Password is the same as student ID
-      const studentUser: User = { id: student.id, name: student.name, role: 'siswa', class: student.class };
-      localStorage.setItem('healthcheck-user', JSON.stringify(studentUser));
-      setUser(studentUser);
-      setLoading(false);
-      router.push('/');
-      return true;
+    try {
+        const student = await getStudentById(id);
+        if (student && pass === id) { // Password is the same as student ID
+            const studentUser: User = { id: student.id, name: student.name, role: 'siswa', class: student.class };
+            localStorage.setItem('healthcheck-user', JSON.stringify(studentUser));
+            setUser(studentUser);
+            router.push('/');
+            return true;
+        }
+    } catch (error) {
+        console.error("Error logging in student:", error);
+    } finally {
+        setLoading(false);
     }
 
-    setLoading(false);
     return false;
   }, [router]);
 

@@ -14,6 +14,7 @@ import {
   Shield,
   Pill,
   Loader2,
+  Upload,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -36,4 +37,5 @@ export const Icons = {
   users: Users,
   clipboardList: ClipboardList,
   spinner: Loader2,
+  upload: Upload,
 };

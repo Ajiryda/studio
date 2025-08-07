@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
 import type { Medication, Visit, Student } from './types';
 
 const MEDICATIONS_COLLECTION = 'medications';
@@ -56,7 +56,7 @@ export const getStudentById = async (id: string): Promise<Student | null> => {
 
 
 export const getStudentsByClass = async (className: string): Promise<Student[]> => {
-    const q = query(collection(db, STUDENTS_COLLECTION), where('class', '==', className));
+    const q = query(collection(db, STUDENTS_COLLECTION), where('class', '==', className), orderBy('name'));
     const querySnapshot = await getDocs(q);
     const students = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -64,6 +64,19 @@ export const getStudentsByClass = async (className: string): Promise<Student[]> 
     } as Student));
     // Sort students by name client-side
     return students.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export const batchAddStudents = async (students: Student[]): Promise<void> => {
+    const batch = writeBatch(db);
+    students.forEach((student) => {
+        // Use student.id as the document ID in Firestore
+        const docRef = doc(db, STUDENTS_COLLECTION, student.id);
+        batch.set(docRef, {
+            name: student.name,
+            class: student.class,
+        });
+    });
+    await batch.commit();
 }
 
 // Visit Services
