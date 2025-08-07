@@ -32,7 +32,7 @@ const allNavItems = [
   { href: '/', icon: Icons.dashboard, label: 'Dasbor', roles: ['admin', 'guru', 'siswa'] },
   { href: '/uks-traffic', icon: Icons.traffic, label: 'Kunjungan UKS', roles: ['admin', 'guru'] },
   { href: '/screening', icon: Icons.screening, label: 'Skrining', roles: ['admin', 'guru'] },
-  // { href: '/analytics', icon: Icons.analytics, label: 'Analitik', roles: ['admin', 'guru'] },
+  { href: '/analytics', icon: Icons.analytics, label: 'Analitik', roles: ['admin', 'guru'] },
   { href: '/medication', icon: Icons.medication, label: 'Manajemen Obat', roles: ['admin', 'guru'] },
   { href: '/admin', icon: Icons.admin, label: 'Dasbor Admin', roles: ['admin'] },
 ];
